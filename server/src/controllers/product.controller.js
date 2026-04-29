@@ -84,7 +84,7 @@ export const deleteProduct = async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
     if (!product) return handleError(res, buildErrObject(404, 'Product not found'));
-    await product.delete();
+    await Product.collection.deleteOne({ _id: product._id });
     emitProductsChanged({ productId: product.id, action: 'deleted' });
     return sendSuccess(res, product, 'Product deleted successfully');
   } catch (error) {

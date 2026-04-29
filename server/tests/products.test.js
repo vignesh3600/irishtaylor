@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { after, before, beforeEach, describe, it } from 'mocha';
 import request from 'supertest';
 import app from '../src/app.js';
+import Product from '../src/models/product.model.js';
 import { clearTestDb, closeTestDb, connectTestDb } from './setup.js';
 import { createProduct, createUser } from './helpers.js';
 
@@ -55,5 +56,17 @@ describe('product routes', () => {
     expect(res.body.success).to.equal(true);
     expect(res.body.result.docs).to.have.length(1);
     expect(res.body.result.totalDocs).to.equal(1);
+  });
+
+  it('hard deletes products', async () => {
+    const { token } = await createUser({ role: 'admin', email: 'delete-admin@example.com' });
+    const product = await createProduct();
+
+    const res = await request(app).delete(`/api/products/${product.id}`).set('Authorization', `Bearer ${token}`);
+    const deletedProduct = await Product.collection.findOne({ _id: product._id });
+
+    expect(res.status).to.equal(200);
+    expect(res.body.success).to.equal(true);
+    expect(deletedProduct).to.equal(null);
   });
 });
