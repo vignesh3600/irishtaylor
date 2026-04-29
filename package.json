@@ -1,0 +1,24 @@
+{
+  "name": "mern-clothing-crud-assessment",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production-minded MERN ecommerce CRUD assessment with auth, RTK Query, realtime stock alerts, and tests.",
+  "scripts": {
+    "install:all": "npm install --workspaces",
+    "dev": "concurrently \"npm run dev --workspace server\" \"npm run dev --workspace client\"",
+    "seed": "npm run seed --workspace server",
+    "test": "npm test --workspace server",
+    "build": "npm run build --workspace client"
+  },
+  "workspaces": [
+    "server",
+    "client"
+  ],
+  "overrides": {
+    "diff": "^8.0.2",
+    "serialize-javascript": "^7.0.5"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
