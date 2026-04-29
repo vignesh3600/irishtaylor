@@ -47,7 +47,7 @@ Every backend API uses the same success/error contract.
 3. Run both apps:
    npm run dev
 
-4. seed admin user
+4. seed admin user ( or ) manually update role in the db level 
    npm run seed
 
 
@@ -68,9 +68,42 @@ The first registered user can be promoted manually in MongoDB by setting `role: 
 ## AI Tools Used
 
 - Codex:
-used codex to setup the boiler plate for redux to eliminate the time and used it for api integation with codex
+I used Codex to accelerate the initial development process, especially for setting up the Redux architecture and integrating APIs efficiently.
 
+Instead of manually writing boilerplate code—which is repetitive and time-consuming—I leveraged Codex to:
+* Generate a standard Redux folder structure (store, slices, reducers, actions)
+* Configure Redux Toolkit with best practices
+* Automatically create async thunks for API calls
+* Reduce manual errors in setup and improve consistency
+
+For API integration, I provided my backend endpoints to Codex and used it to:
+
+* Create Redux async actions (createAsyncThunk)
+* Handle loading, success, and error states
+* Structure reducers to manage API responses cleanly
+* Ensure proper state normalization
+
+This significantly reduced development time and allowed me to focus more on business logic rather than repetitive setup.
 
 - chatgpt:
-used chatgpt for the shadecn
+I used ChatGPT to integrate shadcn/ui, which is a modern UI component library for building clean and accessible interfaces like product card and card contents.
+
+Specifically, ChatGPT helped me:
+
+* Quickly set up ShadCN in my React project
+* Generate UI components like: Forms, Buttons, Modals
+* Ensure proper Tailwind CSS integration
+
+This improved the UI development speed and ensured a professional design system.
+
+- Codex:
+I also used Codex to generate unit tests, which helped ensure code reliability and maintainability.
+
+With Codex, I was able to:
+
+* Generate test cases
+* Write tests for API integration logic
+* Instead of writing tests from scratch, I provided my functions/components and Codex generated: Structured test suites, Mock API calls
+
+This ensured better code quality while saving time during development.
 
