@@ -100,7 +100,7 @@ export const api = createApi({
     }),
 
     getUsers: builder.query({
-      query: () => '/admin/users',
+      query: (params = {}) => ({ url: '/admin/users', params }),
       transformResponse: (response) => response.result,
       providesTags: ['User']
     })

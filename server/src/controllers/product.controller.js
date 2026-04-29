@@ -1,6 +1,6 @@
 import { matchedData } from 'express-validator';
 import Product from '../models/product.model.js';
-import { emitStockAlert } from '../config/socket.js';
+import { emitProductCreated, emitProductsChanged, emitStockAlert } from '../config/socket.js';
 import { env } from '../config/env.js';
 import { buildErrObject, handleError, sendSuccess } from '../utils/response.js';
 
@@ -56,6 +56,7 @@ export const createProduct = async (req, res) => {
       createdBy: req.user.id,
       updatedBy: req.user.id
     });
+    emitProductCreated(product);
     maybeEmitStockAlert(product);
     return sendSuccess(res, product, 'Product created successfully', 201);
   } catch (error) {
@@ -71,6 +72,7 @@ export const updateProduct = async (req, res) => {
 
     Object.assign(product, data, { updatedBy: req.user.id });
     await product.save();
+    emitProductsChanged({ productId: product.id, action: 'updated' });
     maybeEmitStockAlert(product);
     return sendSuccess(res, product, 'Product updated successfully');
   } catch (error) {
@@ -83,6 +85,7 @@ export const deleteProduct = async (req, res) => {
     const product = await Product.findById(req.params.id);
     if (!product) return handleError(res, buildErrObject(404, 'Product not found'));
     await product.delete();
+    emitProductsChanged({ productId: product.id, action: 'deleted' });
     return sendSuccess(res, product, 'Product deleted successfully');
   } catch (error) {
     return handleError(res, error);

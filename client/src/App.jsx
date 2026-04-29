@@ -1,4 +1,4 @@
-import { PackagePlus, Search, ShoppingBag, UserRound } from 'lucide-react';
+import { ChevronLeft, ChevronRight, PackagePlus, Search, ShoppingBag, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Toaster, toast } from 'react-hot-toast';
@@ -18,12 +18,14 @@ import { api, useAddCartItemMutation, useCreateProductMutation, useDeleteProduct
 import { createSocket } from './services/socket.js';
 
 const extractError = (error) => error?.data?.message || error?.error || 'Something went wrong';
+const productPageSize = 6;
 
 const AppContent = () => {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
+  const [page, setPage] = useState(1);
   const [productModal, setProductModal] = useState({ open: false, product: null });
   const role = user?.role;
 
@@ -31,9 +33,10 @@ const AppContent = () => {
     () => ({
       search: search || undefined,
       category: category || undefined,
-      limit: 24
+      page,
+      limit: productPageSize
     }),
-    [category, search]
+    [category, page, search]
   );
 
   const { data, isLoading, isFetching } = useGetProductsQuery(params);
@@ -48,7 +51,11 @@ const AppContent = () => {
     if (role === 'admin') socket.emit('admin:join');
 
     socket.on('stock:alert', (payload) => {
-      setNotice(payload.message);
+      toast.error(payload.message, { id: `stock-${payload.productId}` });
+      dispatch(api.util.invalidateTags(['Product']));
+    });
+    socket.on('product:created', (payload) => {
+      toast.success(payload.message, { id: `product-created-${payload.productId}` });
       dispatch(api.util.invalidateTags(['Product']));
     });
     socket.on('products:changed', () => dispatch(api.util.invalidateTags(['Product'])));
@@ -56,7 +63,29 @@ const AppContent = () => {
     return () => socket.disconnect();
   }, [dispatch, role]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [category, search]);
+
+  useEffect(() => {
+    if (data?.totalPages && page > data.totalPages) {
+      setPage(data.totalPages);
+    }
+  }, [data?.totalPages, page]);
+
   const products = data?.docs || [];
+  const currentPage = data?.page || page;
+  const totalPages = data?.totalPages || 1;
+  const totalProducts = data?.totalDocs || 0;
+  const pageStart = totalProducts ? data?.pagingCounter || (currentPage - 1) * productPageSize + 1 : 0;
+  const pageEnd = totalProducts ? pageStart + products.length - 1 : 0;
+  const pageNumbers = useMemo(() => {
+    const firstPage = Math.max(1, currentPage - 1);
+    const lastPage = Math.min(totalPages, firstPage + 2);
+    const startPage = Math.max(1, lastPage - 2);
+
+    return Array.from({ length: lastPage - startPage + 1 }, (_item, index) => startPage + index);
+  }, [currentPage, totalPages]);
 
   const handleAddToCart = async (product) => {
     try {
@@ -164,19 +193,62 @@ const AppContent = () => {
           {isLoading ? (
             <p className="text-sm text-muted-foreground">Loading products...</p>
           ) : products.length ? (
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {products.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  role={role}
-                  busy={addCartState.isLoading || deleteState.isLoading}
-                  onAddToCart={handleAddToCart}
-                  onEdit={(item) => setProductModal({ open: true, product: item })}
-                  onDelete={handleDeleteProduct}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                {products.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    role={role}
+                    busy={addCartState.isLoading || deleteState.isLoading}
+                    onAddToCart={handleAddToCart}
+                    onEdit={(item) => setProductModal({ open: true, product: item })}
+                    onDelete={handleDeleteProduct}
+                  />
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-3 rounded-lg border bg-card p-3 text-sm shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-muted-foreground">
+                  Showing {pageStart}-{pageEnd} of {totalProducts} products
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Previous page"
+                    disabled={currentPage <= 1 || isFetching}
+                    onClick={() => setPage((value) => Math.max(1, value - 1))}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  {pageNumbers.map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      type="button"
+                      variant={pageNumber === currentPage ? 'default' : 'outline'}
+                      size="sm"
+                      aria-current={pageNumber === currentPage ? 'page' : undefined}
+                      disabled={isFetching}
+                      onClick={() => setPage(pageNumber)}
+                    >
+                      {pageNumber}
+                    </Button>
+                  ))}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="Next page"
+                    disabled={currentPage >= totalPages || isFetching}
+                    onClick={() => setPage((value) => Math.min(totalPages, value + 1))}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </>
           ) : (
             <EmptyState title="No products found" description="Try a different search or add a product as admin." />
           )}
